@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لعبة XO</title>
+
+<style>
+:root {
+  --primary: #4f46e5;
+  --secondary: #22c55e;
+  --bg: #f9fafb;
+  --card: #ffffff;
+  --text: #111827;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "Cairo", Tahoma, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #6366f1, #22c55e);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 90px;
+}
+
+.container {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 25px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.2);
+  text-align: center;
+}
+
+h1 {
+  margin-top: 0;
+  color: var(--primary);
+}
+
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+
+button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: .3s;
+}
+
+button:hover {
+  opacity: .9;
+}
+
+.mode-buttons button {
+  background: var(--secondary);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cell {
+  aspect-ratio: 1;
+  background: #eef2ff;
+  border-radius: 15px;
+  font-size: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.cell:hover {
+  background: #e0e7ff;
+}
+
+.status {
+  margin-top: 15px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Footer */
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #111827;
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="startScreen">
+  <h1>🎮 لعبة XO</h1>
+  <input type="text" id="player1" placeholder="اسم اللاعب الأول">
+  <input type="text" id="player2" placeholder="اسم اللاعب الثاني (اختياري)">
+  
+  <div class="mode-buttons">
+    <button onclick="startGame(1)">لاعب واحد</button>
+    <button onclick="startGame(2)">لاعبان</button>
+  </div>
+</div>
+
+<div class="container hidden" id="gameScreen">
+  <h1>لعبة XO</h1>
+  <div class="status" id="status"></div>
+  <div class="board" id="board"></div>
+  <button onclick="resetGame()">إعادة اللعب</button>
+</div>
+
+<footer>
+  <div>اسم الطالب: AMMAR TAREQ SAUD ALSUBHI (عمار طارق سعود الصبحى)</div>
+  <div>الرقم الجامعي: 446008173</div>
+  <div>بإشراف: Mohammed Ahmed Jabali</div>
+</footer>
+
+<script>
+let board = ["", "", "", "", "", "", "", "", ""];
+let currentPlayer = "X";
+let gameActive = true;
+let players = [];
+let mode = 1;
+
+const winConditions = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+function startGame(selectedMode) {
+  mode = selectedMode;
+  const p1 = document.getElementById("player1").value || "اللاعب 1";
+  const p2 = selectedMode === 2 
+    ? (document.getElementById("player2").value || "اللاعب 2")
+    : "الكمبيوتر";
+
+  players = [p1, p2];
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("gameScreen").classList.remove("hidden");
+  initBoard();
+  updateStatus();
+}
+
+function initBoard() {
+  const boardEl = document.getElementById("board");
+  boardEl.innerHTML = "";
+  board = ["", "", "", "", "", "", "", "", ""];
+  gameActive = true;
+  currentPlayer = "X";
+
+  board.forEach((_, i) => {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.addEventListener("click", () => handleMove(i));
+    boardEl.appendChild(cell);
+  });
+}
+
+function handleMove(index) {
+  if (!gameActive || board[index]) return;
+
+  board[index] = currentPlayer;
+  document.getElementsByClassName("cell")[index].textContent = currentPlayer;
+
+  if (checkWin()) {
+    document.getElementById("status").textContent = `🏆 الفائز: ${players[currentPlayer === "X" ? 0 : 1]}`;
+    gameActive = false;
+    return;
+  }
+
+  if (!board.includes("")) {
+    document.getElementById("status").textContent = "🤝 تعادل!";
+    gameActive = false;
+    return;
+  }
+
+  currentPlayer = currentPlayer === "X" ? "O" : "X";
+  updateStatus();
+
+  if (mode === 1 && currentPlayer === "O") {
+    setTimeout(computerMove, 500);
+  }
+}
+
+function computerMove() {
+  let empty = board.map((v,i) => v === "" ? i : null).filter(v => v !== null);
+  let move = empty[Math.floor(Math.random() * empty.length)];
+  handleMove(move);
+}
+
+function checkWin() {
+  return winConditions.some(c =>
+    c.every(i => board[i] === currentPlayer)
+  );
+}
+
+function updateStatus() {
+  document.getElementById("status").textContent =
+    `الدور على: ${players[currentPlayer === "X" ? 0 : 1]} (${currentPlayer})`;
+}
+
+function resetGame() {
+  initBoard();
+  updateStatus();
+}
+</script>
+
+</body>
+</html>
